@@ -1,0 +1,868 @@
+\documentclass[a4paper,9pt]{article}
+
+\usepackage[margin=1.4in]{geometry}
+
+\usepackage{array}
+\usepackage{xcolor}
+
+\usepackage[latin1]{inputenc}
+\usepackage[english]{babel}
+\usepackage{url}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{longtable}
+\usepackage{enumitem}
+\usepackage{bold-extra}
+\usepackage{fancyvrb}
+
+\usepackage{color}
+\definecolor{linkColor}{rgb}{0.2,0.4,0.6}
+\usepackage[
+	colorlinks,
+	citecolor=linkColor,
+	linkcolor=linkColor,
+	menucolor=linkColor,
+	urlcolor=linkColor,
+]{hyperref}
+
+
+%%%% TITLE SETTING
+
+\newcommand{\bigtitle}[1]{
+	{\begin{center} 
+		\huge #1\\[1ex]
+		\hrule
+	\end{center}}
+}
+
+	
+
+%%%% PARAGRAPH
+
+\newcommand{\indentp}[1]{
+	\vspace{0.2cm}
+	\begin{minipage}{0.95\textwidth}
+	{\noindent \hskip-1px #1}
+	\end{minipage}
+	\vspace{0.2cm}
+}
+
+%%%% LIST
+
+%double item
+\newcolumntype{A}{>{\raggedleft}p{0.07\textwidth}}
+\newcolumntype{B}{p{0.88\textwidth}}
+\newenvironment{doubletablelist}
+{
+	\vspace{-0.2cm}
+	\begin{longtable}[!h]{AB}}{\end{longtable}
+}
+
+\newcommand{\dtlist}[2]{
+\hspace{-3cm}
+\noindent
+	\begin{minipage}{0.07\textwidth}
+	\begin{flushright}
+	\textsc{#1}
+	\end{flushright}
+	\end{minipage}
+	& #2\\[0.2cm]
+}
+
+%single item
+\newcolumntype{a}{>{\raggedleft}p{0.24\textwidth}}
+\newcolumntype{b}{p{0.7\textwidth}}
+\newenvironment{singletablelist}
+{	\vspace{-0.2cm}
+	\begin{longtable}[!h]{ab}}{\end{longtable}
+}
+
+\newcommand{\stlist}[2]{
+	\hspace{-3cm}
+	\noindent
+	\begin{minipage}{0.34\textwidth}
+	\begin{flushright}
+	\texttt{#1}
+	\end{flushright}
+	\end{minipage}
+	& #2\\[0.2cm]
+}
+
+%%%% ITEM BULLET
+
+\newcommand{\bulletitem}{\item[$\bullet$]}
+\newcommand{\circitem }{\item[$\circ$]}
+\newcommand{\minusitem}{\item[-]}
+\newcommand{\astitem}{\item[$\ast$]}
+
+
+\begin{document}
+
+
+\begin{center}
+\bigtitle{PopPAnTe: Population and Pedigree Association Testing of Quantitative Data \\ ------ \\  Users' Guide}
+\end{center}
+
+\vspace{0.5cm}
+
+
+\section{Background}
+
+PopPAnTe is a user-friendly Java program that enables association studies of quantitative data in related samples. Relationships between individuals can be either described by known family structures of any size and complexity, or by genetic similarity matrices (GSM) inferred from genome-wide genetic data. This approach is particularly useful when some degree of hidden relatedness (including population stratification) is expected, but extensive genealogical information is missing or incomplete, thus facilitating the usage of biobank collections from population isolates. 
+
+
+\vspace{0.3cm}
+\noindent
+PopPAnTe analyses quantitative data in a variance component framework in order to model the resemblance among individuals. In fact, when dealing with related samples it is necessary to model the resemblance among family members that could be determined by polygenic effects. Therefore, the association between variables is calculated using a mixed model where the polygenic relationship between individuals is modelled as a random component. 
+When genealogical information is available, PopPAnTe evaluates the relatedness matrix from the known pedigree relationships. When such information is not available, as in population-based analyses, a GSM  can be inferred by using genome wide genotype data.
+
+\noindent
+PopPAnTe implements an inheritance and an association model. 
+%
+Let the association model be described as
+\[
+r_i = \mu + \beta p_i + g_i +e_i			
+\]						
+where $r_i$ represents the values of the dependent quantitative variable (\emph{response}, for instance transcript levels or quantitative phenotype) of the i-th individual, $\mu$ is the response mean, $\beta$ is the estimate of the independent quantitative variable (\emph{predictor}, for instance DNA methylation or metabolite level) $p_i$ effects and $g_i$ and $e_i$  are  the polygenic and environment effect, respectively. 
+%
+This linear mixed model can be extended to include covariates as fixed effects, as
+\[
+r_i = \mu + \beta p_i + \Sigma_j \beta_j F_{ij} + g_i + e_i                                               
+\]
+where $\beta_j$ is the estimate of the j-th fixed effect F.
+
+\noindent
+Let the inheritance model be described as
+\[
+p_i = \mu + g_i +e_i			
+\]
+where $p_i$  is the value of the dependent variable for the i-th individual, $\mu$ is its mean and $g_i$ and $e_i$  are  the polygenic and environment effect, respectively. 
+%
+This linear mixed model can also be extended to include covariates as fixed effects, and data can be described as
+\[
+p_i = \mu + \Sigma_j \beta_j F_{ij} + g_i + e_i
+\]
+
+\newpage
+
+\noindent
+In both models, the variance covariance matrix can be calculated as
+\[
+                        \omega = 2\Phi\sigma_g^2 + I\sigma_e^2   			                
+\]						
+where $2\Phi$ is the matrix of the expected proportion of alleles shared IBD over the genome between each pair of individuals, $I$ is the identity matrix, and $\sigma_a^2$ and $\sigma_e^2$  are the additive genetic and environmental variance, respectively.  When the family structure is known PopPAnTe evaluates the kinship matrix $\Phi$ internally, on the basis of the theoretical kinships extracted from the know pedigree relationships, and assuming pedigree founders as unrelated~\cite{kinship}. When the family structure is not available, the kinship matrix can be estimated from genome-wide genetic data with any of several well-established tools (such as PLINK~\cite{plink}, GCTA~\cite{gcta}, or LDAK~\cite{ldak}) and used as input for PopPAnTe.
+
+\noindent
+The random effects are assumed to follow a multivariate normal distribution with zero mean and numerical procedures can be used to estimate the variance component parameters $\sigma_a^2$ and $\sigma_e^2$ and the likelihood of the data.
+
+\vspace{0.3cm}
+
+\noindent
+The heritability value is calculated as
+\[
+h^2 = \frac{\sigma_a^2}{\sigma_e^2  + \sigma_a^2}
+\]
+
+\vspace{0.3cm}
+
+\noindent
+When the relatedness matrix is evaluated by PopPAnTe using the known pedigree relationships, it is ensured that this results in a variance-covariance matrix that is usually both symmetric and semi-positive definite. Therefore, PopPAnTe assess the maximum likelihood estimates of the variance components through efficient Cholesky decomposition. However, when the kinship matrix is provided in input, the  property of positive-definiteness may not hold. In this case, a bending procedure~\cite{bending} is used by default to transform the matrix when it is not positive semi-definite. The user has also the option to use a LU decomposition instead. Additionally, PopPAnTe implements the QR decomposition to solve the rare cases where the variance-covariance matrix is not invertible and neither the Cholesky nor the LU decompositions can be used.
+
+\noindent
+When predictors can be ordered in space, as it is for instance for gene expression or epigenetic markers, PopPAnTe allows the computation of region-based association tests by gathering information from flanking predictors included in a sliding window of user-defined size, whose values are replaced with their first principal component.
+
+
+\vspace{0.3cm}
+
+\noindent
+PopPAnTe assesses the significance of the results both through formal likelihood testing and through an empirical procedure. 
+In fact, a likelihood ratio test between a model where the intensity signal is modelled in the fixed
+effect $L(\mu, \sigma_a^2, \sigma_e^2 , \beta | r, P)$ -- where P is a matrix of the independent values -- and a model where its effects are assumed to be equal to 0, namely $L(\mu, \sigma_a^2, \sigma_e^2 , \beta=0 | p, P)$ can be than used to asses the significance of the association between the intensity signal and the  quantitative value.
+
+\noindent
+PopPAnTe also allows the evaluation of empirical p-values by randomly permuting the independent values (or the window-specific principal component) among subjects and re-assessing the association under the null hypothesis. When family structure is provided as input, values are randomly permuted among family members. To speed up the performance PopPAnTe implements an adaptive permutation approach~\cite{adaptive}, stopping the generation of randomly permuted samples either when \emph{a)} a number of successes $s$ is reached, $s$ being chosen such that desired level of significance $\alpha$ will be sampled with a 68\% CI  (about 1 standard error) and contained within a specified level of precision $\pi$, or (to ensure the termination in a finite number of iterations) when \emph{b)} a number of iterations $i$ is reached, $i$ being chosen as a function of $\alpha$ and $\pi$.
+
+\newpage
+
+\noindent
+Quantile normalisation can be automatically applied to each variable to improve normality of the response variables and of the predictors. Moreover, PopPAnTe implements two approaches to correct the association test for unwanted biological (\emph{e.g.}, sex) and technical variability (\emph{e.g.}, batch effects). When the source of the confounders is known, it can be directly included in the association model. To deal with unknown source of biological and technical co-variation, PopPAnTe can integrate in the association model the principal components that are required to explain a user-specified percentage of variation.
+
+\noindent
+PopPAnTe implements the Benjamini-Hochberg procedure (BH step-up procedure) to control the false discovery rate~\cite{BH}. To aid in results interpretation and further analyses, PopPAnTe generates also basic Q-Q and manhattan plots.
+
+
+
+\subsection*{References}
+%
+	\begin{itemize}
+		\bibitem[1]{plink} Purcell, S., et al. (2007) PLINK: a tool set for whole-genome association and popula-tion-based linkage analyses, Am J Hum Genet, 81, 559-575.
+		\bibitem[2]{gcta} Yang, J., Lee, S.H., Goddard, M.E., \& Visscher P.M. (2011) GCTA: a tool for Ge-nome-wide Complex Trait Analysis,  Am J Hum Genet, 88, 76-82.
+		\bibitem[3]{ldak} Speed, D., Hemani, G., Johnson, M. R., \& Balding, D. J. (2012). Improved heritability estimation from genome-wide SNPs. The American Journal of Human Genetics, 91(6), 1011-1021.
+		\bibitem[4]{adaptive} Che, R., Jack, J. R., Motsinger-Reif, A. A., \& Brown, C. C. (2014). An adaptive permutation approach for genome-wide association study: evaluation and recommendations for use. BioData Mining, 7(9).
+		\bibitem[5]{BH} Benjamini, Y., \& Hochberg, Y. (1995) Controlling the false discovery rate: a practical and powerful approach to multiple testing. Journal of the Royal Statistical Society. Series B (Methodological) : 289-300.
+		\bibitem[6]{kinship} Thompson, E. A. (1986). Pedigree analysis in human genetics, Johns Hopkins University Press
+		\bibitem[7]{bending} Hayes, JF and Hill, WG (1981). Modification of estimates of parameters in the construction of genetic selection indices ('bending'), Biometrics, 483--493
+	\end{itemize}
+
+
+\newpage	
+
+\section{Version and Copyright}
+
+PopPAnTe is a command-line java jar executable. It is currently at version 1.0.2, released on October 20th, 2018. It requires java version 1.7+.
+
+
+\vspace{0.3cm}
+
+\noindent
+PopPAnTe is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+
+\noindent
+PopPAnTe is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+
+\noindent
+You should have received a copy of the GNU General Public License along with PopPAnTe.  If not, see \url{http://www.gnu.org/licenses/}.
+
+\vspace{0.3cm}
+
+\noindent
+For any bugs or problems found, or to require additional features, please contact us at:
+\begin{itemize}
+	\setlength{\itemsep}{-5pt}
+	\minusitem Dr. Alessia Visconti \url{alessia.visconti@kcl.ac.uk}.
+	\minusitem Dr. Mario Falchi \url{mario.falchi@kcl.ac.uk};
+\end{itemize}
+
+
+\section{Acknowledgement}
+
+\noindent
+PopPAnTe includes and modifies procedures developed by Hariklia Eleftherohorinou (variance component core) Sam Halliday (mtj libraries), Carlos Morcillo Suarez (Q-Q and Manhattan plots), Ivan Akimov \& \emph{fanweixiao} (Hashids). We would like to thank them for allowing the free download, modification, and distribution of their work accordingly to the terms of public licenses.
+
+\noindent
+We would also like to thank Massimo Mangino for being our beta-tester. His feedback has been really important in the editing of this users' guide.
+
+\newpage
+
+\section{Input file format}
+
+PopPAnTe requires text input files having a PLINK-like format (PED/MAP). \textbf{None of the input files has header, and files are all white-space (space or tab) delimited. }
+
+\noindent
+Users are advised to check the validity of their files before running the software.
+
+\subsection{PED file}
+\label{sec:pedfile}
+The pedigree (PED) file has seven \underline{mandatory} columns representing: 
+
+\begin{Verbatim}
+	Family ID
+	Individual ID
+	Paternal ID
+	Maternal ID
+	Sex 
+	Affection status
+	Twin status
+\end{Verbatim}
+
+\noindent
+Response values (column 8 onwards) must be numeric, and missing values can be represented with any of the following values: \texttt{X, x, NA, na, NaN, NAN, nan}. Individuals having a missing value for a dependent variable will be excluded from the analysis of that variable.
+
+\noindent
+Any quantitative variable, such as transcript or metabolite levels, or quantitative phenotypes, can be used as dependent variable (or \emph{response}). 
+
+\noindent
+When the family structure is known, PopPAnTE evaluates the pedigree-based relatedness matrix from the known pedigree relationships. To allow the correct reconstruction of the relatedness matrix, the structure of each family included in the PED file must be complete, that is, each individual must have their parents included in the PED file. Hence, if families are not complete, mock parents should be added to the PED file and their response values set to \emph{missing} (see above). Mock individuals' paternal and maternal IDs should be set to zero, and their affection status set to -9. Each individual with affection value equal to -9 will be considered as mock and ignored during the testing.
+When a genetic similarity matrix is provided as input, the creation of mock parents is not required.
+
+\vspace{0.3cm}
+
+\noindent
+Please also note that:
+\begin{itemize}
+	\setlength{\itemsep}{-3pt}
+	\minusitem the IDs are alphanumeric and the combination of family and individual ID should uniquely identify a person;
+	\minusitem sex should be represented as: 1 (male), 2 (female) or 0 (unknown);
+	\minusitem affection status should be represented as: 1 (unaffected), 2 (affected), 0 (missing) or -9 (mock);
+	\minusitem twin status should be represented as: MZ or 1 (monozygotic twin), DZ or 2 (dizygotic twin) or 0 (not twin or unknown);
+	% \minusitem any quantitative traits (such as transcript levels) can be used;
+	% \minusitem if an individual has a missing phenotype value she will be excluded from the analysis of that phenotype;
+	\minusitem the number of phenotypes should be the same as the number of rows of the RESPONSE files (see Section~\ref{sec:responsefile});
+	\minusitem PopPAnTe does not consider sex and affection status in the main analyses. If the users would like to include sex as covariate, they should use the COVARIATE file (see Section~\ref{sec:covariatefile}).
+\end{itemize}
+
+\noindent
+To check the validity of the PED file one can use the \textbf{pedcheck} mode available within PopPAnTe (See Section~\ref{sec:usage} for details) by running the following command\footnote{PopPAnTe is a command-line java jar executable and must be run from a command prompt (Windows) or terminal window (Linux, Unix, Mac OS X). The examples in this users' guide suppose that executable and data are located in the same folder.}:
+\begin{Verbatim}
+	java -jar poppante.jar -ped mydata.ped -mode pedcheck
+\end{Verbatim}
+
+
+\newpage
+
+\subsection{RESPONSE file}
+\label{sec:responsefile}
+
+The RESPONSE file describes the dependent quantitative variables (\emph{e.g.,} phenotypes).
+It has as many rows as the columns included in the PED file, and consists of only one \underline{mandatory} column:
+
+\begin{Verbatim}
+	Response Name
+\end{Verbatim}
+
+\vspace{0.3cm}
+
+\noindent
+Please note that:
+\begin{itemize}
+	\setlength{\itemsep}{-3pt}
+	\minusitem the rows order must follow the columns order of the response values in the PED file;
+	\minusitem if the number of columns is greater than one, subsequent columns will be ignored.
+\end{itemize}
+
+\subsection{PREDICTOR file}
+
+This PREDICTOR describes the independent variable. It has two \underline{mandatory} columns representing: 
+
+\begin{Verbatim}
+	Family ID
+	Individual ID
+\end{Verbatim}
+
+\noindent
+Predictor values (column 3 onwards) must be numeric, and missing values can be represented with any of the following values: \texttt{X, x, NA, na, NaN, NAN, nan}. Individuals having a missing value for a variable will be excluded from the analysis of that variable.
+
+\noindent 
+When the heritability mode is chosen, the variable to test should be represented using the PREDICTOR file.
+
+\vspace{0.3cm}
+
+\noindent
+Please note that:
+\begin{itemize}
+	\setlength{\itemsep}{-3pt}
+	\minusitem the IDs should correspond to those listed in the PED file. Data belonging to individuals not listed in the PED file will be ignored;
+	\minusitem the number of columns should be the same as the number of rows of the MAP files (see Section~\ref{sec:mapfile});
+	% \minusitem if an individual has a missing methylation value she will be excluded from the analysis of that methylation site.
+\end{itemize}
+
+
+
+
+\subsection{MAP file}
+\label{sec:mapfile}
+
+The MAP file describes the predictors. We are aware that often predictors are values measured in genome-wide experiment, as it is, for instance, epigenetic markers in epigenome-wide association studies. For this reason we allows the users to include in the MAP file the position of the markers. When specified, the markers position will be loaded in the system and printed in the results file, facilitating the localisation of signals in genomic segments.
+
+% \newpage
+
+\noindent
+The MAP file has either one or three \underline{mandatory} columns:
+
+\begin{Verbatim}
+	Predictor Name
+\end{Verbatim}
+%
+or
+%
+\begin{Verbatim}
+	Marker Name
+	Chromosome
+	Position
+\end{Verbatim}
+%
+according to the variable under study.
+
+\vspace{0.3cm}
+
+\noindent
+Please note that:
+\begin{itemize}
+	\setlength{\itemsep}{-3pt}
+	\minusitem the rows order of the predictors follows the columns order of the independent values in the PREDICTOR file;
+	\minusitem if the number of columns is smaller than three, only the first column will be loaded;
+	\minusitem if the number of columns is greater than three, the subsequent columns will be ignored.
+\end{itemize}
+
+
+
+\subsection{COVARIATE file}
+\label{sec:covariatefile}
+
+PopPAnTe supports the inclusion of one or more \textbf{quantitative} covariates in the analysis. Covariates are given in a separate file and are optional.
+The COVARIATE file should be formatted as the PREDICTOR file, having two \underline{mandatory} columns:
+
+\begin{Verbatim}
+	Family ID
+	Individual ID
+\end{Verbatim}
+
+\noindent
+Covariate values (column 3 onwards) must be numeric, and missing values can be represented with any of the following values: \texttt{X, x, NA, na, NaN, NAN, nan}.  Individuals having a missing value for a covariate will be excluded from \underline{all} the analyses.
+
+\noindent
+PopPAnTe will include all covariates that are present in the covariates file. If the users would like to perform different analyses using different sets of covariates, they should create different COVARIATE files and run separate analyses.
+
+\vspace{0.3cm}
+
+\noindent
+Please note that:
+\begin{itemize}
+	\setlength{\itemsep}{-3pt}
+	\minusitem the IDs should correspond to those listed in the PED file. Data belonging to individuals not listed in the PED file will be ignored;
+	% \minusitem if an individual has a missing covariate value she will be excluded from the analyses;
+	% \minusitem PopPAnTe (in its current version) will include all covariates that are present in the covariates file. If the user would like to perform different analyses using different sets of covariates, she should create different covariate files and run separate analyses.
+\end{itemize}
+
+
+\subsection{INCLUDE file}
+PopPAnTe supports the analysis of only a subset of predictors, and these predictors should be listed using the INCLUDE files, consisting of only one \underline{mandatory} column:
+
+\begin{Verbatim}
+	Marker/Predictor Name
+\end{Verbatim}
+
+
+\subsection{FILTER file}
+PopPAnTe supports the analysis of only a subset of responses, and these responses should be listed using the FILTER files, consisting of only one \underline{mandatory} column:
+
+\begin{Verbatim}
+	Response Name
+\end{Verbatim}
+
+
+\subsection{CORRECTION file}
+PopPAnTe supports the inclusion of one or more covariates for correcting the predictor values. These covariate will be regressed out of the data to correct for these unwanted variations. Another implemented approach is to regress out the first N principal components (see Section~\ref{sec:usage} for details).
+
+\noindent
+These covariates are given in a separate file and are optional. The covariate file should be formatted as the PREDICTOR file, having two \underline{mandatory} columns:
+
+\begin{Verbatim}
+	Family ID
+	Individual ID
+\end{Verbatim}
+
+\noindent
+Covariate values (column 3 onwards) must be numeric, and \underline{no missing values are allowed}.
+
+\newpage
+
+\subsection{KINSHIP file}
+When the family structure is not available, PopPAnTe supports the usage of a genetic similarity matrix estimated from genome-wide genetic data. The kinship file has five \underline{mandatory} columns:
+
+\begin{Verbatim}
+	Family ID of the first individual
+	Individual ID of the first individual
+	Family ID of the second individual
+	Individual ID of the second individual
+	Coefficient of relationship
+\end{Verbatim}
+
+\noindent
+Please note that:
+\begin{itemize}
+	\setlength{\itemsep}{-3pt}
+	\minusitem the IDs should correspond to those listed in the PED file. Data belonging to individuals not listed in the PED file will be ignored;
+	\minusitem if not specified in the kinship file the coefficient of self-relationship is set to one;
+	\minusitem if not specified in the kinship file the coefficient of relationship between individuals is set to zero;
+	\minusitem PopPAnTe allow the user to set a minimum coefficient value (see the option \texttt{-mink} below) under which individuals are considered unrelated, \emph{i.e.}, their coefficient of relationship is set to zero. We suggest to use this option to speed up the analyses.
+\end{itemize}
+
+
+\section{Running PopPAnTe}
+\label{sec:usage}
+
+PopPAnTe is a command-line java jar executable and must be run from a command prompt (Windows) or terminal window (Linux, Unix, Mac OS X). The examples in this users' guide suppose that executable and data are located in the same folder.
+
+
+\vspace{0.5cm}
+
+\noindent
+PopPAnTe performs three different analyses, as specified by the \texttt{-mode} parameter:
+
+\begin{itemize}
+	\setlength{\itemsep}{-3pt}
+	\minusitem \textbf{pedcheck:} verifies the validity of the pedigree (PED) file (see Section~\ref{sec:pedfile});
+	\minusitem \textbf{association:} performs the association between the dependent and the independent variables; and
+	\minusitem \textbf{heritability:} evaluates the heritability of the independent variables.\
+\end{itemize}
+
+\vspace{0.5cm}
+
+\noindent
+To run the \textbf{pedcheck} mode only two parameter are mandatory, namely \texttt{-mode} and \texttt{-ped}:
+
+\begin{Verbatim}
+	java -jar poppante.jar -mode pedcheck -ped mydata.ped
+\end{Verbatim}
+
+\noindent
+\texttt{-mode} specifies the analysis mode, while \texttt{-ped} specifies the path of the PED file.
+The output will be a console message either confirming the correctness of the PED file or listing the problem found during the assessment.
+
+\vspace{0.5cm}
+
+\noindent
+To run the \textbf{association} mode five parameters are mandatory, namely \texttt{-mode}, \texttt{-ped}, \texttt{-response}, \texttt{-predictor}, and \texttt{-map}:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+\end{Verbatim}
+
+\noindent
+while the \texttt{-response} option is not necessary when the \textbf{heritability} mode is request. In this case, indeed, the dependent variables are not used and thus not loaded.
+ 
+\noindent
+Again, \texttt{-mode} specifies the analysis mode, while the other parameters specify the path to the input files. 
+
+\noindent
+These commands provide a minimal output. For a more detailed log of the analysis one should use the \texttt{-verbose} parameter:  
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -verbose true
+\end{Verbatim}
+%
+Using this parameter a more detailed log will be shown, including the parameter in use, the data loaded, and the time used to perform each step of the analysis.
+
+\vspace{0.5cm}
+
+\noindent
+If no \texttt{-output} parameter is set, as in the previous example, the results are printed on the terminal window. To redirect the output to a file, let's say \texttt{results}, one should run:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -output results
+\end{Verbatim}
+
+\noindent
+and the results will be saved in a tab-separated file called \texttt{results.tsv}. If the \texttt{-plot} parameter is set, as in the following:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -output results -plot true
+\end{Verbatim}
+
+\noindent
+two extra files (\texttt{results\_Manhattan-plot.png} and \texttt{results\_QQ-plot.png}), representing Manhattan and Q-Q plot, will be saved. If the evaluation of the empirical p-value is set (with the \texttt{-alpha} and \texttt{-c} parameters, see below), the Manhattan and Q-Q plot will be also produced (with names: \texttt{results\_Manhattan-plot\_epvalue.png} and \texttt{results\_QQ-plot\_epvalue.png}). When the parameter \texttt{-output} is not set, the plots are saved in the current directory as \texttt{QQ-plot.png} and \texttt{Manhattan-plot.png} (or \texttt{QQ-plot\_epvalue.png} and \texttt{Manhattan-plot\_epvalue.png})
+
+\vspace{0.5cm}
+
+\noindent
+In the \textbf{association} and in the \textbf{heritability} mode, and when predictors can be ordered in space, PopPAnTe can analyse both one predictor at a time or multiple predictors at the same time (region-based testing). In the latter case, the users should specify the size of the region (in bp) using the \texttt{-region} parameter:
+ 
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -region 250
+\end{Verbatim}
+
+\noindent
+When the \texttt{-region} parameter is not set a \emph{single} analysis is performed, meaning that each predictors is analysed separately.
+
+\noindent
+When a region size is specified all the predictors from a given marker and within the given window are collapsed together by means of a principal component analysis, where the first principal component (PC1) is used instead of the single predictor values. When only one predictor is available within the given window, that predictor is used.
+
+\vspace{0.5cm}
+
+\noindent
+For the sake of clarity let us consider an example where a heritability test has been performed with a region included in a 250 bp window. The markers used are the following (MAP file):
+
+\begin{Verbatim}
+foo1234567 1 1001000
+foo1234568 1 1001100
+foo1234569 1 1001150
+foo1234570 1 1002000 
+\end{Verbatim}
+
+\noindent
+The first test will include all the values from chr1:1001000 to chr1:1001240 (that is from the first probe until the end of the chosen window): the values of the three probes in this window (foo1234567, foo1234568 and foo1234569) will be collapsed (by substituting their values with the PC1), and the result will be labelled with the the probe that is at the start of the window (that is foo1234567).
+The second test will include all the values from chr1:1001100 to chr1:1001340 (that are foo1234568 and foo1234569), and so forth.
+Summarising, PopPAnTe scans the marker list and collapses all the markers that are included from a marker until the end of the window. Then, it labels the results with the fist marker. 
+ 
+\vspace{0.5cm}
+
+\noindent
+To use a COVARIATE file the \texttt{-covariate} parameter should be used:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -covariate covariate.txt
+\end{Verbatim}
+
+\vspace{0.5cm}
+
+\noindent
+To test only a subset of predictors, the INCLUDE file should be specified using the \texttt{-include} parameter:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -include mysites.txt
+\end{Verbatim}
+
+\vspace{0.5cm}
+
+\noindent
+To use a kinship matrix estimated with external tools the \texttt{-kinship} parameter should be used:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -kinship kinship.txt
+\end{Verbatim}
+
+\vspace{0.5cm}
+
+\noindent
+To evaluate an empirical p-value by means of an adaptive procedure the \texttt{-alpha} and the \texttt{-c} parameter should be used:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -alpha 0.01 -c 0.1
+\end{Verbatim}
+
+\noindent
+This setting will guarantee that the desired level of significance (\texttt{alpha=0.01}) will be sampled with a standard error within the required precision (\texttt{c=0.1}), that is \texttt{alpha*c=0.001}. The two parameters are both mandatory, that is, if the users specify one, they must specify both.
+
+\noindent
+Please note that the p-value resulting from the log likelihood ratio test is always computed.
+
+\vspace{0.5cm}
+
+\noindent
+To correct the predictor values for a set of known \textbf{quantitative} covariates the \texttt{-correct} parameter, followed by the covariates file path, should be used:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -correct correction_covariate.txt
+\end{Verbatim}
+
+\noindent
+If the correction covariates are unknown, the predictor values can be corrected by means of principal components. In this case the the \texttt{-correct} parameter should be followed by a number (in [0,1]) describing the proportion of overall variability represented by the first principal components that the users would like to regress out:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -correct 0.2
+\end{Verbatim}
+
+\noindent 
+In this case the predictors will be corrected using as many principal components as necessary to account for the 20\% of overall variability.
+
+\vspace{0.5cm}
+
+\noindent
+To normalise the response variable and the predictors values the \texttt{-normalise} parameter should be used:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -normalise both
+\end{Verbatim}
+%
+This command normalises both dependent and independent variables, while:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -normalise predictor
+\end{Verbatim}
+%
+normalises only the independent one. To normalise only the dependent variables one should use:
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	  -response response.txt -predictor predictors.txt -map map.txt
+	  -normalise response
+\end{Verbatim}
+
+\vspace{0.5cm}
+
+\noindent
+When using large dataset, PopPAnTe could runs out of memory. This is because of the way that Java runs on a computer - what is actually run is a program called a virtual machine (the JVM) which executes the java instructions. The JVM has limits on the memory that can be allocated to the java program - and you might need to increase them if you are working with particularly large amount of data. In order to increase the amount of memory for PopPAnTe, the program should be run from the command line by writing for example:
+
+\begin{Verbatim}
+	java -jar -Xms64M -Xmx256M poppante.jar  -mode heritability
+	-ped mydata.ped -response response.txt -predictor predictors.txt
+	-map map.txt
+\end{Verbatim}
+
+\noindent
+This sets the initial and maximum memory size to 64MB and 256MB. The M suffix can be changed with G to represent gigabyte.
+
+
+
+
+
+%\newpage
+
+\section{Output}
+PopPAnTe produces a tab-delimited output, that can be read with several software application such as spreadsheet (\emph{e.g.}, Microsoft Excel, LibreOffice Calc), statistical tools (\emph{e.g.}, R, Matlab) or text editors (\emph{e.g.}, Notepad, Textmate). 
+
+\noindent
+When the \textbf{heritability} mode is selected the output file has 10 or 12 columns representing:
+
+\begin{Verbatim}
+	Predictors/Marker Name
+	[Chromosome]
+	[Position]
+	Nobs
+	Log likelihod of the null model (Lnlk_Null)
+	Log likelihod of the full model (Lnlk_Full)
+	Degree of freedom of the null model (dfnull)
+	Degree of freedom of the full model (dffull)
+	chi^2
+	pvalue
+	adj_pvalue
+	heritability
+\end{Verbatim}
+%
+the chromosome and the position are included only if available in the MAP file.
+
+\noindent
+When the \textbf{association} mode is selected the output file has 13 or 15 columns representing:
+
+\begin{Verbatim}
+	Response Name
+	Predictors/Marker Name
+	[Chromosome]
+	[Position]
+	Nobs
+	Log likelihod of the null model (Lnlk_Null)
+	Log likelihod of the full model (Lnlk_Full)
+	Degree of freedom of the null model (dfnull)
+	Degree of freedom of the full model (dffull)
+	chi^2
+	pvalue
+	adj_pvalue
+	beta
+	standard error
+	percentage of variance explained
+\end{Verbatim}
+%
+again, the chromosome and the position are included only if available in the MAP file.
+
+\noindent
+Please note that:
+\begin{itemize}
+	\setlength{\itemsep}{-3pt}
+		\minusitem the results are printed on the standard output (console) unless the parameter \texttt{-output} is set;
+		\minusitem the output has a header unless the parameter \texttt{-header} is set to false;
+		\minusitem when the \texttt{-relc} parameter is set two extra columns are added to the results:
+\begin{Verbatim}
+	posF
+	giniC
+\end{Verbatim}
+		representing the percentage of families showing a positive contribution and the Gini coefficient assessed on their contribution to the chi-square statistics, respectively;
+		\minusitem when the \texttt{-variance} parameter is set two extra columns are added to the results:
+\begin{Verbatim}
+	varNull
+	varFull
+\end{Verbatim}
+		representing the estimate of the variance component in the null and full model, respectively. In the inheritance model the null model has a single variance estimate, that is the environmental effect, while the full model shows the variance estimates for both the environmental and the genetic effect;		
+		\minusitem when the parameter \texttt{-region} is set and thus the region-based analysis is performed the predictor in each result line corresponds to the marker representing the start of the window.
+		\minusitem when the parameter \texttt{-alpha} and the parameter \texttt{-c} are set two extra columns are added to the results:
+\begin{Verbatim}
+	epvalue
+	adj_epvalue
+\end{Verbatim}
+		representing the empirical p-value evaluated in the adaptive procedure.
+	\minusitem when the parameter \texttt{-plot} is set the output includes also Manhattan and Q-Q plot. 
+\end{itemize}
+
+
+\section{Example}
+Example files can be found on the PopPAnTe website.
+
+\vspace{0.3cm}
+
+\noindent
+\texttt{mydata.ped} contains data for 159 individuals organised in 10 families; it also contains quantitative levels for one phenotype, the individuals body mass index (BMI), which is described in the \texttt{response.txt} file. CpG values for 12 sites are used as predictors and given in \texttt{predictors.txt} and described in \texttt{map.txt}. 
+A gene similarity matrix for these individuals is given in \texttt{kinship.txt} and covariates (age and sex) are given in \texttt{covariates.txt}. \texttt{correction\_covariates.txt} provides the covariates for the correction of the DNA methylation values (cell-type proportions as estimated using the Houseman method). \texttt{mysites.txt} list a subset of the methylation sites.
+
+\vspace{0.3cm}
+
+\noindent
+To run the program for the association analysis use:
+
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	-response response.txt -predictor predictors.txt -map map.txt
+\end{Verbatim}
+
+\noindent
+specifying the size of the region if region-based test is to be performed:
+
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	-response response.txt -predictor predictors.txt -map map.txt
+	-region 200
+\end{Verbatim}
+
+\noindent
+Additional covariates can be included from the \texttt{covariates.txt} file. Try:
+
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	-response response.txt -predictor predictors.txt -map map.txt
+	-covariate covariate.txt
+\end{Verbatim}
+
+\noindent
+To run the program with an external kinship matrix use the \texttt{-kinship} parameter
+
+\begin{Verbatim}
+	java -jar poppante.jar -mode association -ped mydata.ped 
+	-response response.txt -predictor predictors.txt -map map.txt
+	-kinship kinship.txt
+\end{Verbatim}
+
+\noindent
+To run the program for the heritability analysis use the mode \texttt{-mode heritability} instead of \texttt{-mode association}.
+
+
+\vspace{0.3cm}
+
+
+\newpage
+
+\section{PopPAnTe parameters}
+A complete list of the parameter (in alphabetical order) is listed in the following.
+
+\vspace{0.3cm}
+\textbf{Mandatory parameters:}
+
+\begin{singletablelist}
+	\stlist{-mode <pedcheck |heritability| association>}{analysis to perform}
+	\stlist{-map file path}{predictor information (MAP file) \emph{-- non mandatory if mode is pedcheck}}
+	\stlist{-ped file path}{pedigree file (PED file)}
+	\stlist{-predictor file path}{independent values (PREDICTOR file) \emph{-- non mandatory if mode is pedcheck}}
+	\stlist{-response file path}{response information (RESPONSE file)\emph{-- non mandatory if mode is pedcheck or heritability}}
+	
+	
+\end{singletablelist}
+
+\vspace{0.3cm}
+\textbf{Optional parameters:}
+
+\begin{singletablelist}
+	\stlist{-alpha p-value}{p-value that controls the experiment-wise error rate (EWER), used in the adaptive permutation procedure \emph{-- default: null}}
+	\stlist{-c precision}{desired precision in the adaptive permutation procedure  \emph{-- default: null}}
+	\stlist{-correct <file path|double>}{file containing the covariate values used to correct the independent values or the threshold of overall variability accounted by the principal component one would like to regress out from the data  \emph{-- default: null}}
+	\stlist{-covariate file path}{file containing the covariate values \emph{-- default: null}}
+	\stlist{-decomposition <QR|LU>}{applies the QR/LU decomposition when the genetic relationship matrix is provided as input \emph{(default: apply a bending procedure and use the Cholesky decomposition)}}
+	\stlist{-include file path}{file containing the predictors to include in the analysis \emph{-- default: null}}
+	\stlist{-filter file path}{file containing the responses to include in the analysis \emph{-- default: null}}
+	\stlist{-header <true|false>}{whether the output has a header \emph{-- default: true}}
+	\stlist{-help}{Print a help message and exit}
+	\stlist{-kinship file path}{genetic similarity matrix file. The matrix should be estimated with an external tool \emph{-- default: null}}
+	\stlist{-mink <threshold|c2|c3>}{minimum genomic relationship coefficient, all the kinship value smaller that threshold are set to 0. When set to c2 (c3) the minimum genomic relationship coefficient is set to 0.0315 (second cousins, 0.0078; third cousins) \emph{-- default: 0}}
+	\stlist{-normalise <response|predictor|both>}{whether the values of responses, predictors or both should be transformed to their corresponding quantile in a standard normal transformation \emph{-- default null}}
+	\stlist{-output file path}{output file \emph{-- default: standard output}}
+	\stlist{-plot <true|false>}{whether to plot the Manhattan and Q-Q plot \emph{-- default: false}}
+	\stlist{-region bp}{window size for the region-based testing. If not set one predictor is analysed at a time \emph{-- default: no region size set}}
+	\stlist{-relc threshold}{whether the contribution of the sample to the final statistics must be evaluated. It allows one to verify whether the positive signal has been generated by a uniform contribution of the families within the sample or by a strong contribution of a small number of families. 
+	This option will generate two additional columns, one reporting the percentage of families showing a positive contribution and the second one the Gini coefficient assessed on their contribution to the chi-square statistics \emph{-- default: false}}
+	\stlist{-threads n}{number of threads to use \emph{-- default: 1}}
+	\stlist{-variance <true|false>}{whether the variance is printed. This option will generate two additional columns \emph{-- default: false}}
+	\stlist{-verbose <true|false>}{whether verbose \emph{-- default: false}}
+\end{singletablelist}
+
+
+
+\end{document}
